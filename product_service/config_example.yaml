@@ -1,0 +1,2 @@
+database-url: postgres://user:password@localhost:5431/product_service_db
+grpc-server-address: localhost:4000

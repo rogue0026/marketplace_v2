@@ -1,0 +1,3 @@
+database-url: postgres://user:password@localhost:5430/order_service_db
+grpc-server-address: :4002
+user-service-address: localhost:4001

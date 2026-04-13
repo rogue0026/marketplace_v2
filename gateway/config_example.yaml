@@ -1,0 +1,4 @@
+http-address: localhost:8080
+product-service-addr: localhost:4000
+user-service-addr: localhost:4001
+order-service-addr: localhost:4002
