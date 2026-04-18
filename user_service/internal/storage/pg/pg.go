@@ -164,6 +164,8 @@ func (r *UsersRepository) AddMoney(ctx context.Context, userID uint64, moneyAmou
 	if err != nil {
 		return fmt.Errorf("repo, add money: %w", err)
 	}
+	defer tx.Rollback(ctx)
+
 	ct, err := tx.Exec(ctx, AddMoneySQL, userID, moneyAmount)
 	if err != nil {
 		return fmt.Errorf("repo, add money: %w", err)
@@ -217,6 +219,7 @@ func (r *UsersRepository) WriteOffMoney(ctx context.Context, userID uint64, mone
 	if err != nil {
 		return fmt.Errorf("repo, write off money, user_id=%d: %w", userID, err)
 	}
+	defer tx.Rollback(ctx)
 
 	ct, err := tx.Exec(ctx, WriteOffMoneySQL, userID, moneyAmount)
 	if err != nil {

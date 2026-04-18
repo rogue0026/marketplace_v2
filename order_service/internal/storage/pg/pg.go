@@ -236,6 +236,7 @@ func (r *OrdersRepository) CreatePayment(ctx context.Context, orderID uint64, us
 	if err != nil {
 		return 0, fmt.Errorf("repo, create payment: %w", err)
 	}
+	defer tx.Rollback(ctx)
 
 	var paymentID uint64
 	err = tx.QueryRow(

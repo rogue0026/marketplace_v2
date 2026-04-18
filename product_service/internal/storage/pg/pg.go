@@ -230,6 +230,7 @@ func (r *ProductsRepository) CancelReservation(ctx context.Context, orderID uint
 	if err != nil {
 		return fmt.Errorf("repo, cancel reservation: %w", err)
 	}
+	defer tx.Rollback(ctx)
 
 	rows, err := tx.Query(ctx, ReservationInfoSQL, orderID)
 	if err != nil {

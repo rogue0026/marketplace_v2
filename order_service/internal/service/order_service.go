@@ -105,13 +105,15 @@ func (s *OrderService) PayForOrder(ctx context.Context, orderID uint64) (uint64,
 		if err != nil {
 			return 0, err
 		}
+
+		return 0, err
 	}
 
 	err = s.repo.ChangeOrderStatus(ctx, orderID, domain.StatusPayedSuccessfully)
 	if err != nil {
 		return 0, err
 	}
-	
+
 	paymentID, err := s.repo.CreatePayment(ctx, orderID, userID, orderTotalPrice)
 	if err != nil {
 		return 0, err

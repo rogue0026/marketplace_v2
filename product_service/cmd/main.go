@@ -12,6 +12,7 @@ func main() {
 	app, err := application.New(ctx, "./config.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
 	}
 
 	lis, err := net.Listen("tcp", app.Cfg.GRPCServerAddress)
