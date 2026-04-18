@@ -12,6 +12,23 @@ import (
 	"google.golang.org/grpc/status"
 )
 
+func mapErr(err error) error {
+	s, ok := status.FromError(err)
+	if !ok {
+		return err
+	}
+	switch {
+	case s.Code() == codes.AlreadyExists:
+		return apperrors.ErrUserAlreadyExists
+	case s.Code() == codes.NotFound:
+		return apperrors.ErrUserNotFound
+	case s.Code() == codes.FailedPrecondition:
+		return apperrors.ErrNotEnoughMoney
+	default:
+		return err
+	}
+}
+
 type UserService struct {
 	client pb.UserServiceClient
 }
@@ -19,7 +36,7 @@ type UserService struct {
 func NewUserService(ccString string) (*UserService, error) {
 	cc, err := grpc.NewClient(ccString, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create connection with user service: %w", err)
+		return nil, fmt.Errorf("client, user service: %w", err)
 	}
 
 	client := pb.NewUserServiceClient(cc)
@@ -37,14 +54,7 @@ func (s *UserService) CreateNewUser(ctx context.Context, username string, passwo
 	})
 
 	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok {
-			return 0, fmt.Errorf("failed to create new user: %w", err)
-		}
-
-		if s.Code() == codes.AlreadyExists {
-			return 0, fmt.Errorf("error: user %w", apperrors.ErrAlreadyExists)
-		}
+		return 0, fmt.Errorf("client, user service, create user: %w", mapErr(err))
 	}
 
 	return resp.UserId, nil
@@ -53,13 +63,7 @@ func (s *UserService) CreateNewUser(ctx context.Context, username string, passwo
 func (s *UserService) DeleteUser(ctx context.Context, userID uint64) error {
 	_, err := s.client.DeleteUser(ctx, &pb.DeleteUserRequest{UserId: userID})
 	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok {
-			return fmt.Errorf("failed to request delete user=%d: %w", userID, err)
-		}
-		if s.Code() == codes.NotFound {
-			return fmt.Errorf("the requested user=%d %w", userID, apperrors.ErrNotFound)
-		}
+		return fmt.Errorf("client, user service, delete user: %w", mapErr(err))
 	}
 
 	return nil
@@ -72,13 +76,7 @@ func (s *UserService) AddMoney(ctx context.Context, userID uint64, moneyAmount u
 	})
 
 	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok {
-			return fmt.Errorf("failed to request add money to user=%d: %w", userID, err)
-		}
-		if s.Code() == codes.NotFound {
-			return fmt.Errorf("user %w", apperrors.ErrNotFound)
-		}
+		return fmt.Errorf("client, user service, add money: %w", mapErr(err))
 	}
 
 	return nil
@@ -91,12 +89,7 @@ func (s *UserService) AddProductToBasket(ctx context.Context, userID uint64, pro
 	})
 
 	if err != nil {
-		s, ok := status.FromError(err)
-		if !ok {
-			return fmt.Errorf("failed to request to add product into basket: %w", err)
-		}
-
-		return s.Err()
+		return fmt.Errorf("client, user service, add product to basket: %w", mapErr(err))
 	}
 
 	return nil

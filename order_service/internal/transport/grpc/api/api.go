@@ -2,13 +2,10 @@ package api
 
 import (
 	"context"
-	"errors"
-	"order_service/internal/apperrors"
 	"order_service/internal/service"
+	"order_service/internal/transport/grpc/errmap"
 
 	"github.com/rogue0026/marketplace-proto_v2/gen/order_service/pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 )
 
 type Handler struct {
@@ -27,14 +24,21 @@ func New(orderService *service.OrderService) *Handler {
 func (h *Handler) CreateOrder(ctx context.Context, in *pb.CreateOrderRequest) (*pb.CreateOrderResponse, error) {
 	orderID, err := h.orderService.CreateOrder(ctx, in.UserId)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrNotFound) {
-			return nil, status.Error(codes.FailedPrecondition, "unable to create order, user basket is empty")
-		}
-		
-		return nil, err
+		return nil, errmap.MapError(err)
 	}
 
 	resp := &pb.CreateOrderResponse{OrderId: orderID}
+
+	return resp, nil
+}
+
+func (h *Handler) PayForOrder(ctx context.Context, in *pb.PayForOrderRequest) (*pb.PayForOrderResponse, error) {
+	paymentID, err := h.orderService.PayForOrder(ctx, in.OrderId)
+	if err != nil {
+		return nil, errmap.MapError(err)
+	}
+
+	resp := &pb.PayForOrderResponse{PaymentId: paymentID}
 
 	return resp, nil
 }

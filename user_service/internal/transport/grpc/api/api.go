@@ -2,13 +2,10 @@ package api
 
 import (
 	"context"
-	"errors"
-	"user_service/internal/apperrors"
 	"user_service/internal/service"
+	"user_service/internal/transport/grpc/errmap"
 
 	"github.com/rogue0026/marketplace-proto_v2/gen/user_service/pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
 	"google.golang.org/protobuf/types/known/emptypb"
 )
 
@@ -26,11 +23,7 @@ func NewHandler(s *service.UserService) *Handler {
 func (h *Handler) CreateNewUser(ctx context.Context, in *pb.CreateNewUserRequest) (*pb.CreateNewUserResponse, error) {
 	userID, err := h.UserService.CreateNewUser(ctx, in.Username, in.Password)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrAlreadyExists) {
-			return nil, status.Error(codes.AlreadyExists, err.Error())
-		}
-
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	resp := &pb.CreateNewUserResponse{
@@ -43,11 +36,7 @@ func (h *Handler) CreateNewUser(ctx context.Context, in *pb.CreateNewUserRequest
 func (h *Handler) DeleteUser(ctx context.Context, in *pb.DeleteUserRequest) (*emptypb.Empty, error) {
 	err := h.UserService.DeleteUser(ctx, in.UserId)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "user not found")
-		}
-
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -56,7 +45,7 @@ func (h *Handler) DeleteUser(ctx context.Context, in *pb.DeleteUserRequest) (*em
 func (h *Handler) AddProductToBasket(ctx context.Context, in *pb.AddProductToBasketRequest) (*emptypb.Empty, error) {
 	err := h.UserService.AddProductToBasket(ctx, in.UserId, in.ProductId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -65,11 +54,9 @@ func (h *Handler) AddProductToBasket(ctx context.Context, in *pb.AddProductToBas
 func (h *Handler) GetUserBasket(ctx context.Context, in *pb.GetUserBasketRequest) (*pb.GetUserBasketResponse, error) {
 	userBasketInfo, err := h.UserService.GetBasket(ctx, in.UserId)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "basket is empty")
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
+
 	resp := &pb.GetUserBasketResponse{
 		Products: make([]*pb.GetUserBasketResponse_Product, 0),
 	}
@@ -91,7 +78,7 @@ func (h *Handler) GetUserBasket(ctx context.Context, in *pb.GetUserBasketRequest
 func (h *Handler) ClearBasket(ctx context.Context, in *pb.ClearBasketRequest) (*emptypb.Empty, error) {
 	err := h.UserService.ClearBasket(ctx, in.UserId)
 	if err != nil {
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -101,10 +88,7 @@ func (h *Handler) AddMoney(ctx context.Context, in *pb.AddMoneyRequest) (*emptyp
 	err := h.UserService.AddMoney(ctx, in.UserId, in.MoneyAmount)
 
 	if err != nil {
-		if errors.Is(err, apperrors.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, err.Error())
-		}
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	return &emptypb.Empty{}, nil
@@ -113,15 +97,7 @@ func (h *Handler) AddMoney(ctx context.Context, in *pb.AddMoneyRequest) (*emptyp
 func (h *Handler) WriteOffMoney(ctx context.Context, in *pb.WriteOffMoneyRequest) (*emptypb.Empty, error) {
 	err := h.UserService.WriteOffMoney(ctx, in.UserId, in.MoneyAmount)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrNotFound) {
-			return nil, status.Errorf(codes.NotFound, err.Error())
-		}
-
-		if errors.Is(err, apperrors.ErrNotEnoughMoney) {
-			return nil, status.Error(codes.FailedPrecondition, err.Error())
-		}
-
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	return &emptypb.Empty{}, nil

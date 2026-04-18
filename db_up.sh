@@ -1,0 +1,1 @@
+docker start user_service_db product_service_db order_service_db;

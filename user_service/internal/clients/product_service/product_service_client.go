@@ -20,7 +20,7 @@ type ProductService struct {
 func NewProductServiceClient(ccAddr string) (*ProductService, error) {
 	cc, err := grpc.NewClient(ccAddr, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create connection with product service: %w", err)
+		return nil, fmt.Errorf("client, product service: %w", err)
 	}
 
 	grpcClient := pb.NewProductServiceClient(cc)
@@ -33,14 +33,24 @@ func NewProductServiceClient(ccAddr string) (*ProductService, error) {
 }
 
 func (c *ProductService) ProductsByIDList(ctx context.Context, IDList []uint64) ([]*domain.Product, error) {
-	resp, err := c.grpcClient.ProductsById(ctx, &pb.ProductsByIdRequest{IdList: IDList})
+	resp, err := c.grpcClient.ProductsById(
+		ctx,
+		&pb.ProductsByIdRequest{
+			IdList: IDList,
+		},
+	)
+
 	if err != nil {
 		s, ok := status.FromError(err)
 		if !ok {
-			return nil, fmt.Errorf("failed to request data from product service: %w", err)
+			return nil, fmt.Errorf("client, product service: %w", err)
 		}
-		if s.Code() == codes.NotFound {
-			return nil, fmt.Errorf("products %w", apperrors.ErrNotFound)
+
+		switch {
+		case s.Code() == codes.NotFound:
+			return nil, fmt.Errorf("client, product service: %w", apperrors.ErrProductsNotFound)
+		default:
+			return nil, fmt.Errorf("client, product service: %w", err)
 		}
 	}
 

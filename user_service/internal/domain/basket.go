@@ -7,8 +7,6 @@ type Product struct {
 	Quantity uint64
 }
 type BasketItem struct {
-	ID              uint64
-	UserID          uint64
 	ProductID       uint64
 	ProductQuantity uint64
 }

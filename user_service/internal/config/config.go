@@ -5,9 +5,10 @@ import (
 )
 
 type AppConfig struct {
-	DatabaseURL           string `yaml:"database-url"`
-	GRPCServerAddress     string `yaml:"grpc-server-address"`
-	ProductServiceAddress string `yaml:"product-service-address"`
+	DatabaseURL           string   `yaml:"database-url"`
+	GRPCServerAddress     string   `yaml:"grpc-server-address"`
+	ProductServiceAddress string   `yaml:"product-service-address"`
+	KafkaBrokers          []string `yaml:"kafka-brokers"`
 }
 
 func Load(cfgPath string) (*AppConfig, error) {

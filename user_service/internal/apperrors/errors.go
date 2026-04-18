@@ -3,8 +3,9 @@ package apperrors
 import "errors"
 
 var (
-	ErrInvalidArgument = errors.New("invalid argument")
-	ErrAlreadyExists   = errors.New("already exists")
-	ErrNotFound        = errors.New("not found")
-	ErrNotEnoughMoney  = errors.New("not enough money")
+	ErrProductsNotFound     = errors.New("products not found")
+	ErrEmptyBasket          = errors.New("no data")
+	ErrNotEnoughMoney       = errors.New("not enough money")
+	ErrUsernameAlreadyTaken = errors.New("username already taken")
+	ErrUserNotFound         = errors.New("user not found")
 )

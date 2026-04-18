@@ -2,9 +2,8 @@ package api
 
 import (
 	"encoding/json"
-	"errors"
-	"gateway/internal/apperrors"
 	"gateway/internal/service"
+	"gateway/internal/transport/http/errmap"
 	"net/http"
 )
 
@@ -18,24 +17,21 @@ func ProductCatalogHandler(gateway *service.Gateway) http.HandlerFunc {
 		in := Request{}
 		err := json.NewDecoder(r.Body).Decode(&in)
 		if err != nil {
-			http.Error(w, "invalid request", http.StatusBadRequest)
+			http.Error(w, "invalid input data", http.StatusBadRequest)
 			return
 		}
 
 		products, err := gateway.ProductCatalogPaginated(r.Context(), in.Page, in.Size)
 		if err != nil {
-			if errors.Is(err, apperrors.ErrNotFound) {
-				http.Error(w, "no data", http.StatusNoContent)
-				return
-			}
-
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
 		data, err := json.MarshalIndent(&products, "", "  ")
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
@@ -56,24 +52,22 @@ func ProductsByIDHandler(gateway *service.Gateway) http.HandlerFunc {
 
 		err := json.NewDecoder(r.Body).Decode(&in)
 		if err != nil {
-			http.Error(w, "invalid request", http.StatusBadRequest)
+			http.Error(w, "invalid input data", http.StatusBadRequest)
 			return
 		}
 
 		products, err := gateway.ProductService.ProductsByIDList(r.Context(), in.IDList)
 		if err != nil {
-			if errors.Is(err, apperrors.ErrNotFound) {
-				http.Error(w, "no data", http.StatusNoContent)
-				return
-			}
+			msg, status := errmap.MapError(err)
 
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			http.Error(w, msg, status)
 			return
 		}
 
 		data, err := json.MarshalIndent(&products, "", "  ")
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
@@ -93,17 +87,14 @@ func CreateUserHandler(gateway *service.Gateway) http.HandlerFunc {
 		in := Request{}
 		err := json.NewDecoder(r.Body).Decode(&in)
 		if err != nil {
-			http.Error(w, "invalid request", http.StatusBadRequest)
+			http.Error(w, "invalid input data", http.StatusBadRequest)
 			return
 		}
 
 		userID, err := gateway.CreateNewUser(r.Context(), in.Username, in.Password)
 		if err != nil {
-			if errors.Is(err, apperrors.ErrAlreadyExists) {
-				http.Error(w, err.Error(), http.StatusBadRequest)
-				return
-			}
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
@@ -136,12 +127,8 @@ func DeleteUserHandler(gateway *service.Gateway) http.HandlerFunc {
 
 		err = gateway.UserService.DeleteUser(r.Context(), in.UserID)
 		if err != nil {
-			if errors.Is(err, apperrors.ErrNotFound) {
-				http.Error(w, err.Error(), http.StatusNotFound)
-				return
-			}
-
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
@@ -167,12 +154,8 @@ func AddMoneyHandler(gateway *service.Gateway) http.HandlerFunc {
 
 		err = gateway.AddMoney(r.Context(), in.UserID, in.MoneyAmount)
 		if err != nil {
-			if errors.Is(err, apperrors.ErrNotFound) {
-				http.Error(w, err.Error(), http.StatusNotFound)
-				return
-			}
-
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
@@ -192,13 +175,14 @@ func AddProductToBasketHandler(gateway *service.Gateway) http.HandlerFunc {
 		in := Request{}
 		err := json.NewDecoder(r.Body).Decode(&in)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusBadRequest)
+			http.Error(w, "invalid input data", http.StatusBadRequest)
 			return
 		}
 
 		err = gateway.AddProductToBasket(r.Context(), in.UserID, in.ProductID)
 		if err != nil {
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
@@ -223,12 +207,8 @@ func CreateOrderHandler(gateway *service.Gateway) http.HandlerFunc {
 
 		orderID, err := gateway.CreateOrder(r.Context(), in.UserID)
 		if err != nil {
-			if errors.Is(err, apperrors.ErrFailedPrecondition) {
-				http.Error(w, "unable to create order. basket is empty", http.StatusBadRequest)
-				return
-			}
-
-			http.Error(w, err.Error(), http.StatusInternalServerError)
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
 			return
 		}
 
@@ -237,6 +217,40 @@ func CreateOrderHandler(gateway *service.Gateway) http.HandlerFunc {
 		}
 
 		data, err := json.MarshalIndent(&resp, "", "  ")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	}
+
+	return h
+}
+
+func PayForOrderHandler(gateway *service.Gateway) http.HandlerFunc {
+	type Request struct {
+		OrderID uint64 `json:"order_id"`
+	}
+
+	h := func(w http.ResponseWriter, r *http.Request) {
+		in := Request{}
+		err := json.NewDecoder(r.Body).Decode(&in)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusBadRequest)
+			return
+		}
+
+		paymentID, err := gateway.PayForOrder(r.Context(), in.OrderID)
+		if err != nil {
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
+			return
+		}
+
+		m := map[string]uint64{"payment_id": paymentID}
+		data, err := json.MarshalIndent(&m, "", "  ")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

@@ -5,7 +5,7 @@ go 1.25.4
 require (
 	github.com/go-chi/chi/v5 v5.2.5
 	github.com/ilyakaznacheev/cleanenv v1.5.0
-	github.com/rogue0026/marketplace-proto_v2 v0.0.0-20260413063249-c7c0c0eb8e11
+	github.com/rogue0026/marketplace-proto_v2 v0.0.0-20260416075422-775876a6247e
 	google.golang.org/grpc v1.80.0
 )
 

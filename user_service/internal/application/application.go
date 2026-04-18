@@ -3,19 +3,24 @@ package application
 import (
 	"context"
 	"fmt"
-	"github.com/rogue0026/marketplace-proto_v2/gen/user_service/pb"
-	"google.golang.org/grpc"
+	"net"
 	ps "user_service/internal/clients/product_service"
 	"user_service/internal/config"
+	"user_service/internal/messaging"
 	"user_service/internal/service"
 	"user_service/internal/storage/pg"
 	"user_service/internal/transport/grpc/api"
 	"user_service/pkg/postgresql"
+
+	"github.com/rogue0026/kafka-contracts/contracts"
+	"github.com/rogue0026/marketplace-proto_v2/gen/user_service/pb"
+	"google.golang.org/grpc"
 )
 
 type App struct {
-	Cfg        *config.AppConfig
-	GRPCServer *grpc.Server
+	OutboxRelay *messaging.Relay
+	Cfg         *config.AppConfig
+	GRPCServer  *grpc.Server
 }
 
 func New(ctx context.Context, configPath string) (*App, error) {
@@ -34,6 +39,17 @@ func New(ctx context.Context, configPath string) (*App, error) {
 	// creating repository
 	usersRepository := pg.NewUsersRepository(pool)
 
+	// creating outbox relay
+	topics := []contracts.Topic{
+		contracts.WalletEvents,
+		contracts.UserEvents,
+	}
+	outboxRelay := messaging.NewRelay(
+		pool,
+		appCfg.KafkaBrokers,
+		topics,
+	)
+
 	// creating clients
 	productServiceClient, err := ps.NewProductServiceClient(appCfg.ProductServiceAddress)
 	if err != nil {
@@ -50,9 +66,34 @@ func New(ctx context.Context, configPath string) (*App, error) {
 
 	// creating application instance
 	a := &App{
-		Cfg:        appCfg,
-		GRPCServer: grpcServer,
+		OutboxRelay: outboxRelay,
+		Cfg:         appCfg,
+		GRPCServer:  grpcServer,
 	}
 
 	return a, nil
+}
+
+func (a *App) Run(ctx context.Context) error {
+	l, err := net.Listen("tcp", a.Cfg.GRPCServerAddress)
+	if err != nil {
+		return err
+	}
+
+	go func() {
+		fmt.Printf("starting outbox relay\n")
+		a.OutboxRelay.Run(ctx)
+	}()
+
+	fmt.Printf("user service: starting grpc server at %s\n", a.Cfg.GRPCServerAddress)
+	err = a.GRPCServer.Serve(l)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (a *App) Stop() {
+	a.GRPCServer.GracefulStop()
 }

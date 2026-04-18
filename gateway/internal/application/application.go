@@ -58,6 +58,8 @@ func New(cfgPath string) (*App, error) {
 	r.Post("/api/v1/users/wallets", api.AddMoneyHandler(gateway))
 
 	r.Post("/api/v1/orders", api.CreateOrderHandler(gateway))
+	
+	r.Post("/api/v1/payments", api.PayForOrderHandler(gateway))
 
 	// creating http server
 	s := &http.Server{

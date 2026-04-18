@@ -6,7 +6,7 @@ require (
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/jackc/pgerrcode v0.0.0-20250907135507-afb5586c32a6
 	github.com/jackc/pgx/v5 v5.9.1
-	github.com/rogue0026/marketplace-proto_v2 v0.0.0-20260410105630-df3454e45c95
+	github.com/rogue0026/marketplace-proto_v2 v0.0.0-20260416082659-015c14e14c90
 	google.golang.org/grpc v1.80.0
 )
 

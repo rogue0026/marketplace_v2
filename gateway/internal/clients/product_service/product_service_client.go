@@ -17,10 +17,31 @@ type ProductService struct {
 	client pb.ProductServiceClient
 }
 
+func mapErr(err error) error {
+	s, ok := status.FromError(err)
+	if !ok {
+		return err
+	}
+
+	switch {
+	case s.Code() == codes.FailedPrecondition:
+		return apperrors.ErrNotEnoughProducts
+
+	case s.Code() == codes.InvalidArgument:
+		return apperrors.ErrInvalidUserInput
+
+	case s.Code() == codes.NotFound:
+		return apperrors.ErrProductsNotFound
+
+	default:
+		return err
+	}
+}
+
 func NewProductService(ccString string) (*ProductService, error) {
 	cc, err := grpc.NewClient(ccString, grpc.WithTransportCredentials(insecure.NewCredentials()))
 	if err != nil {
-		return nil, fmt.Errorf("failed to create connection with product service: %w", err)
+		return nil, fmt.Errorf("client, product service: %w", err)
 	}
 
 	client := pb.NewProductServiceClient(cc)
@@ -39,14 +60,8 @@ func (s *ProductService) ProductCatalog(ctx context.Context, page uint64, size u
 	}
 
 	resp, err := s.client.ProductCatalog(ctx, in)
-
 	if err != nil {
-		s, ok := status.FromError(err)
-		if ok && s.Code() == codes.NotFound {
-			return nil, apperrors.ErrNotFound
-		}
-
-		return nil, fmt.Errorf("failed to request product catalog data: %w", err)
+		return nil, fmt.Errorf("client, product service, product catalog: %w", mapErr(err))
 	}
 
 	products := make([]*domain.Product, 0, len(resp.Products))
@@ -70,12 +85,7 @@ func (s *ProductService) ProductsByIDList(ctx context.Context, idList []uint64) 
 
 	resp, err := s.client.ProductsById(ctx, in)
 	if err != nil {
-		s, ok := status.FromError(err)
-		if ok && s.Code() == codes.NotFound {
-			return nil, apperrors.ErrNotFound
-		}
-
-		return nil, fmt.Errorf("failed to request products by id list: %w", err)
+		return nil, fmt.Errorf("client, product service, products by ids: %w", mapErr(err))
 	}
 
 	products := make([]*domain.Product, 0, len(resp.Products))

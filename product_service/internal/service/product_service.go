@@ -10,6 +10,8 @@ type ProductsRepository interface {
 	GetProductsByID(ctx context.Context, IDList []uint64) ([]*domain.Product, error)
 	NewProduct(ctx context.Context, name string, price uint64, quantity uint64) (uint64, error)
 	DeleteProduct(ctx context.Context, productID uint64) error
+	ReserveProducts(ctx context.Context, orderID uint64, products []*domain.Reservation) error
+	CancelReservation(ctx context.Context, orderID uint64) error
 }
 type ProductService struct {
 	products ProductsRepository
@@ -52,6 +54,24 @@ func (s *ProductService) AddNewProduct(ctx context.Context, p *domain.Product) (
 
 func (s *ProductService) DeleteProduct(ctx context.Context, productID uint64) error {
 	err := s.products.DeleteProduct(ctx, productID)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ProductService) ReserveProducts(ctx context.Context, orderID uint64, reservations []*domain.Reservation) error {
+	err := s.products.ReserveProducts(ctx, orderID, reservations)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (s *ProductService) CancelReservationsForOrder(ctx context.Context, orderID uint64) error {
+	err := s.products.CancelReservation(ctx, orderID)
 	if err != nil {
 		return err
 	}

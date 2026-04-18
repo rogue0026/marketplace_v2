@@ -37,7 +37,7 @@ func New(repo UsersRepository, productsClient *ps.ProductService) *UserService {
 func (s *UserService) CreateNewUser(ctx context.Context, username string, password string) (uint64, error) {
 	hashed, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
-		return 0, fmt.Errorf("failed to hash password: %w")
+		return 0, fmt.Errorf("service, create user: %w", err)
 	}
 
 	userID, err := s.users.CreateUser(ctx, username, string(hashed))
@@ -101,6 +101,7 @@ func (s *UserService) GetBasket(ctx context.Context, userID uint64) (map[uint64]
 
 	basketInfoAggregated := make(map[uint64]*domain.BasketItemAggregated)
 	idList := make([]uint64, 0)
+
 	for _, elem := range basket {
 		basketInfoAggregated[elem.ProductID] = &domain.BasketItemAggregated{
 			ProductID:               elem.ProductID,
@@ -125,8 +126,8 @@ func (s *UserService) GetBasket(ctx context.Context, userID uint64) (map[uint64]
 	return basketInfoAggregated, nil
 }
 
-func (c *UserService) ClearBasket(ctx context.Context, userID uint64) error {
-	err := c.users.ClearBasket(ctx, userID)
+func (s *UserService) ClearBasket(ctx context.Context, userID uint64) error {
+	err := s.users.ClearBasket(ctx, userID)
 	if err != nil {
 		return err
 	}

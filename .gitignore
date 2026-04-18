@@ -1,0 +1,5 @@
+build/
+gateway/config.yaml
+user_service/config.yaml
+order_service/config.yaml
+product_service/config.yaml

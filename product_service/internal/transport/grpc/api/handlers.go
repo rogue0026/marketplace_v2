@@ -2,14 +2,13 @@ package api
 
 import (
 	"context"
-	"errors"
-	"product_service/internal/apperrors"
 	"product_service/internal/domain"
 	"product_service/internal/service"
 
+	"product_service/internal/transport/grpc/errmap"
+
 	"github.com/rogue0026/marketplace-proto_v2/gen/product_service/pb"
-	"google.golang.org/grpc/codes"
-	"google.golang.org/grpc/status"
+	"google.golang.org/protobuf/types/known/emptypb"
 )
 
 type Handler struct {
@@ -28,11 +27,7 @@ func NewHandler(s *service.ProductService) *Handler {
 func (h *Handler) ProductCatalog(ctx context.Context, in *pb.ProductCatalogRequest) (*pb.ProductCatalogResponse, error) {
 	products, err := h.ProductService.ProductsPaginated(ctx, in.Page, in.Size)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "products not found")
-		}
-
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	pbProducts := make([]*pb.ProductCatalogResponse_Product, 0, len(products))
@@ -55,11 +50,7 @@ func (h *Handler) ProductCatalog(ctx context.Context, in *pb.ProductCatalogReque
 func (h *Handler) ProductsById(ctx context.Context, in *pb.ProductsByIdRequest) (*pb.ProductsByIdResponse, error) {
 	products, err := h.ProductService.ProductsByID(ctx, in.IdList)
 	if err != nil {
-		if errors.Is(err, apperrors.ErrNotFound) {
-			return nil, status.Error(codes.NotFound, "no data")
-		}
-
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	resp := &pb.ProductsByIdResponse{
@@ -89,11 +80,7 @@ func (h *Handler) AddNewProduct(ctx context.Context, in *pb.AddNewProductRequest
 	})
 
 	if err != nil {
-		if errors.Is(err, apperrors.ErrInvalidArgument) {
-			return nil, status.Error(codes.InvalidArgument, "invalid input data")
-		}
-
-		return nil, status.Error(codes.Internal, err.Error())
+		return nil, errmap.MapError(err)
 	}
 
 	resp := &pb.AddNewProductResponse{
@@ -103,4 +90,28 @@ func (h *Handler) AddNewProduct(ctx context.Context, in *pb.AddNewProductRequest
 	return resp, nil
 }
 
-//func (h *Handler) DeleteProduct(ctx context.Context, in *pb.DeleteProductRequest) (*emptypb.Empty, error) {}
+func (h *Handler) ReserveProducts(ctx context.Context, in *pb.ReserveProductsRequest) (*emptypb.Empty, error) {
+	products := make([]*domain.Reservation, 0, len(in.Products))
+	for _, elem := range in.Products {
+		products = append(products, &domain.Reservation{
+			ProductID: elem.ProductId,
+			Quantity:  elem.Quantity,
+		})
+	}
+
+	err := h.ProductService.ReserveProducts(ctx, in.OrderId, products)
+	if err != nil {
+		return nil, errmap.MapError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}
+
+func (h *Handler) CancelReservationsForOrder(ctx context.Context, in *pb.CancelReservationsForOrderRequest) (*emptypb.Empty, error) {
+	err := h.ProductService.CancelReservationsForOrder(ctx, in.OrderId)
+	if err != nil {
+		return nil, errmap.MapError(err)
+	}
+
+	return &emptypb.Empty{}, nil
+}

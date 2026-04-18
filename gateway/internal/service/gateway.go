@@ -84,3 +84,12 @@ func (g *Gateway) CreateOrder(ctx context.Context, userID uint64) (uint64, error
 
 	return orderID, nil
 }
+
+func (g *Gateway) PayForOrder(ctx context.Context, orderID uint64) (uint64, error) {
+	paymentID, err := g.OrderService.PayForOrder(ctx, orderID)
+	if err != nil {
+		return 0, err
+	}
+
+	return paymentID, nil
+}

@@ -35,7 +35,7 @@ func (r *ProductsRepository) GetProductsPaginated(ctx context.Context, page uint
 
 	rows, err := r.pool.Query(ctx, GetProductsPaginatedSQL, size, offset)
 	if err != nil {
-		return nil, fmt.Errorf("products paginated. failed to fetch rows: %w", err)
+		return nil, fmt.Errorf("repository, products paginated, failed to fetch rows: %w", err)
 	}
 	defer rows.Close()
 
@@ -44,18 +44,18 @@ func (r *ProductsRepository) GetProductsPaginated(ctx context.Context, page uint
 		p := &domain.Product{}
 		err = rows.Scan(&p.ID, &p.Name, &p.Price, &p.Quantity)
 		if err != nil {
-			return nil, fmt.Errorf("products paginated. error while scanning row: %w", err)
+			return nil, fmt.Errorf("repository, products paginated, failed to scan row: %w", err)
 		}
 		products = append(products, p)
 	}
 
 	err = rows.Err()
 	if err != nil {
-		return nil, fmt.Errorf("products paginated. error: %w", err)
+		return nil, fmt.Errorf("repository, products paginated: %w", err)
 	}
 
 	if len(products) == 0 {
-		return nil, fmt.Errorf("products paginated. error: %w", apperrors.ErrNotFound)
+		return nil, fmt.Errorf("repository, products paginated: %w", apperrors.ErrProductNotFound)
 	}
 
 	return products, nil
@@ -66,7 +66,7 @@ const ProductsByIDSQL = `SELECT id, name, price, quantity FROM products WHERE id
 func (r *ProductsRepository) GetProductsByID(ctx context.Context, IDList []uint64) ([]*domain.Product, error) {
 	rows, err := r.pool.Query(ctx, ProductsByIDSQL, IDList)
 	if err != nil {
-		return nil, fmt.Errorf("products by id. failed to fetch rows: %w", err)
+		return nil, fmt.Errorf("repo, products by id, failed to fetch rows: %w", err)
 	}
 	defer rows.Close()
 
@@ -75,7 +75,7 @@ func (r *ProductsRepository) GetProductsByID(ctx context.Context, IDList []uint6
 		p := &domain.Product{}
 		err = rows.Scan(&p.ID, &p.Name, &p.Price, &p.Quantity)
 		if err != nil {
-			return nil, fmt.Errorf("products by id. failed to scan row: %w", err)
+			return nil, fmt.Errorf("repo, products by id. failed to scan row: %w", err)
 		}
 
 		products = append(products, p)
@@ -83,11 +83,11 @@ func (r *ProductsRepository) GetProductsByID(ctx context.Context, IDList []uint6
 
 	err = rows.Err()
 	if err != nil {
-		return nil, fmt.Errorf("products by id. error: %w", err)
+		return nil, fmt.Errorf("repo, products by id: %w", err)
 	}
 
 	if len(products) == 0 {
-		return nil, fmt.Errorf("products by id. error: %w", apperrors.ErrNotFound)
+		return nil, fmt.Errorf("repo, products by id: %w", apperrors.ErrProductNotFound)
 	}
 
 	return products, nil
@@ -101,16 +101,20 @@ func (r *ProductsRepository) NewProduct(ctx context.Context, name string, price 
 	err := r.pool.QueryRow(ctx, NewProductSQL, name, price, quantity).Scan(&productID)
 	if err != nil {
 		var pgErr *pgconn.PgError
+
 		if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.CheckViolation {
-			return 0, fmt.Errorf(
-				"failed to create new product. name=%s price=%d quantity=%d: %w",
-				name,
-				price,
-				quantity,
-				apperrors.ErrInvalidArgument)
+			fmt.Printf("constraint name: %s\n", pgErr.ConstraintName) // todo: for debug
+			switch {
+			case pgErr.ConstraintName == "name_not_empty":
+				return 0, fmt.Errorf("create product, %w: product name", apperrors.ErrInvalidUserInput)
+			case pgErr.ConstraintName == "price_greater_zero":
+				return 0, fmt.Errorf("create product, %w: product price", apperrors.ErrInvalidUserInput)
+			case pgErr.ConstraintName == "quantity_greater_zero":
+				return 0, fmt.Errorf("create product, %w: product quantity", apperrors.ErrInvalidUserInput)
+			}
 		}
 
-		return 0, fmt.Errorf("error while creating new product: %w", err)
+		return 0, fmt.Errorf("create product: %w", err)
 	}
 
 	return productID, nil
@@ -121,11 +125,155 @@ const DeleteProductSQL = `DELETE FROM products WHERE id = $1`
 func (r *ProductsRepository) DeleteProduct(ctx context.Context, productID uint64) error {
 	ct, err := r.pool.Exec(ctx, DeleteProductSQL, productID)
 	if err != nil {
-		return fmt.Errorf("failed to delete product=%d: %w", productID, err)
+		return fmt.Errorf("delete product: %w", err)
 	}
 
 	if ct.RowsAffected() == 0 {
-		return fmt.Errorf("failed to delete product=%d: %w", productID, apperrors.ErrNotFound)
+		return fmt.Errorf("delete product: %w", apperrors.ErrProductNotFound)
+	}
+
+	return nil
+}
+
+const ReserveProductsSQL = `
+	INSERT INTO reservations (order_id, product_id, quantity)
+	VALUES ($1, $2, $3)`
+
+const ReduceProductsSQL = `
+	UPDATE products
+	SET quantity = quantity - $2
+	WHERE id = $1
+`
+
+func (r *ProductsRepository) ReserveProducts(ctx context.Context, orderID uint64, products []*domain.Reservation) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("repo, reserve products: %w", err)
+	}
+	defer tx.Rollback(ctx)
+
+	for _, p := range products {
+		_, err = tx.Exec(
+			ctx,
+			ReserveProductsSQL,
+			orderID,
+			p.ProductID,
+			p.Quantity,
+		)
+
+		if err != nil {
+			var pgErr *pgconn.PgError
+			if errors.As(err, &pgErr) && pgErr.Code == pgerrcode.ForeignKeyViolation {
+				return fmt.Errorf(
+					"repo, reserve products, product_id=%d: %w",
+					p.ProductID,
+					apperrors.ErrProductDoesNotExist,
+				)
+			}
+
+			return fmt.Errorf("repo, reserve products: %w", err)
+		}
+
+		_, err = tx.Exec(
+			ctx,
+			ReduceProductsSQL,
+			p.ProductID,
+			p.Quantity,
+		)
+		if err != nil {
+			var pgErr *pgconn.PgError
+
+			if errors.As(err, &pgErr) &&
+				pgErr.Code == pgerrcode.CheckViolation &&
+				pgErr.ConstraintName == "quantity_greater_zero" {
+
+				return fmt.Errorf(
+					"repo, reserve products, product_id=%d: %w",
+					p.ProductID,
+					apperrors.ErrNotEnoughProducts,
+				)
+
+			}
+
+			return fmt.Errorf(
+				"repo, reserve products, product_id=%d: %w",
+				p.ProductID,
+				err,
+			)
+		}
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("repo, reserve products: %w", err)
+	}
+
+	return nil
+}
+
+const DeleteReservationSQL = `
+	DELETE FROM reservations
+	WHERE order_id = $1`
+
+const ReservationInfoSQL = `
+	SELECT product_id, quantity
+	FROM reservations
+	WHERE order_id = $1`
+
+const IncreaseProductsSQL = `
+	UPDATE products
+	SET quantity = quantity + $2
+	WHERE id = $1`
+
+func (r *ProductsRepository) CancelReservation(ctx context.Context, orderID uint64) error {
+	tx, err := r.pool.Begin(ctx)
+	if err != nil {
+		return fmt.Errorf("repo, cancel reservation: %w", err)
+	}
+
+	rows, err := tx.Query(ctx, ReservationInfoSQL, orderID)
+	if err != nil {
+		return fmt.Errorf("repo, cancel reservation: %w", err)
+	}
+	defer rows.Close()
+
+	items := make([]*domain.Reservation, 0)
+	for rows.Next() {
+		item := domain.Reservation{}
+		err = rows.Scan(&item.ProductID, &item.Quantity)
+		if err != nil {
+			return fmt.Errorf("repo, cancel reservation, scanning row: %w", err)
+		}
+
+		items = append(items, &item)
+	}
+
+	err = rows.Err()
+	if err != nil {
+		return fmt.Errorf("repo, cancel reservation: %w", err)
+	}
+
+	for _, item := range items {
+		_, err = tx.Exec(
+			ctx,
+			IncreaseProductsSQL,
+			item.ProductID,
+			item.Quantity,
+		)
+		if err != nil {
+			return fmt.Errorf("repo, cancel reservation: %w", err)
+		}
+
+	}
+
+	_, err = tx.Exec(ctx, DeleteReservationSQL, orderID)
+	if err != nil {
+		return fmt.Errorf("repo, cancel reservation: %w", err)
+	}
+
+	err = tx.Commit(ctx)
+	if err != nil {
+		return fmt.Errorf("repo, cancel reservation: %w", err)
 	}
 
 	return nil
