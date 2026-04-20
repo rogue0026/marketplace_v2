@@ -14,6 +14,7 @@ import (
 
 	"github.com/rogue0026/kafka-contracts/contracts"
 	"github.com/rogue0026/marketplace-proto_v2/gen/user_service/pb"
+	"golang.org/x/sync/errgroup"
 	"google.golang.org/grpc"
 )
 
@@ -80,18 +81,20 @@ func (a *App) Run(ctx context.Context) error {
 		return err
 	}
 
-	go func() {
-		fmt.Printf("starting outbox relay\n")
-		a.OutboxRelay.Run(ctx)
-	}()
+	g, ctx := errgroup.WithContext(ctx)
 
-	fmt.Printf("user service: starting grpc server at %s\n", a.Cfg.GRPCServerAddress)
-	err = a.GRPCServer.Serve(l)
-	if err != nil {
-		return err
-	}
+	g.Go(func() error {
+		err := a.GRPCServer.Serve(l)
+		if err != nil {
+			return err
+		}
 
-	return nil
+		return nil
+	})
+
+	a.OutboxRelay.Run(ctx)
+
+	return g.Wait()
 }
 
 func (a *App) Stop() {

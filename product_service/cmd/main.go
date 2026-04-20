@@ -3,8 +3,10 @@ package main
 import (
 	"context"
 	"fmt"
-	"net"
+	"os"
+	"os/signal"
 	"product_service/internal/application"
+	"syscall"
 )
 
 func main() {
@@ -12,17 +14,21 @@ func main() {
 	app, err := application.New(ctx, "./config.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
-	}
-
-	lis, err := net.Listen("tcp", app.Cfg.GRPCServerAddress)
-	if err != nil {
-		fmt.Println("error while open tcp connection", err.Error())
 		return
 	}
-	fmt.Println("starting product service at", app.Cfg.GRPCServerAddress)
-	err = app.GRPCServer.Serve(lis)
+
+	stop := make(chan os.Signal, 1)
+	signal.Notify(stop, os.Interrupt, syscall.SIGTERM)
+	go func() {
+		<-stop
+		app.Stop()
+	}()
+
+	fmt.Printf("starting product service at %s\n", app.Cfg.GRPCServerAddress)
+	err = app.Run()
 	if err != nil {
 		fmt.Println(err.Error())
 		return
 	}
+	fmt.Println("service stopped")
 }
