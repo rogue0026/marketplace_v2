@@ -1,0 +1,2 @@
+database-url: postgres://user:password@localhost:5429/notification_service_db
+grpc-server-address: localhost:4003

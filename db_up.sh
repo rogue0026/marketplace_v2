@@ -1,1 +1,1 @@
-docker start user_service_db product_service_db order_service_db;
+docker start user_service_db product_service_db order_service_db notification_service_db;
