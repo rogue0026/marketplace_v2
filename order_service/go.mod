@@ -5,7 +5,7 @@ go 1.25.4
 require (
 	github.com/ilyakaznacheev/cleanenv v1.5.0
 	github.com/jackc/pgx/v5 v5.9.1
-	github.com/rogue0026/kafka-contracts v0.0.0-20260417131831-ce70c32d8d12
+	github.com/rogue0026/kafka-contracts v0.0.0-20260422121440-82288fc3da07
 	github.com/rogue0026/marketplace-proto_v2 v0.0.0-20260416082659-015c14e14c90
 	github.com/segmentio/kafka-go v0.4.50
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260120221211-b8f7ae30c516

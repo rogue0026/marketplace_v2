@@ -36,6 +36,27 @@ const GetNotificationsSQL = `
 	LIMIT $2 OFFSET $3
 `
 
+const CreateNotificationSQL = `
+	INSERT INTO notifications (user_id, title, body, created_at)
+	VALUES ($1, $2, $3, $4)
+`
+
+func (r *NotificationsRepository) CreateNotification(ctx context.Context, item *domain.Notification) error {
+	_, err := r.pool.Exec(
+		ctx,
+		CreateNotificationSQL,
+		item.UserID,
+		item.Title,
+		item.Body,
+		item.CreatedAt,
+	)
+	if err != nil {
+		return fmt.Errorf("repo, create notification: %w", err)
+	}
+
+	return nil
+}
+
 func (r *NotificationsRepository) GetNotifications(
 	ctx context.Context,
 	userID uint64,

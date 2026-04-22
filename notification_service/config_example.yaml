@@ -1,2 +1,5 @@
 database-url: postgres://user:password@localhost:5429/notification_service_db
 grpc-server-address: localhost:4003
+kafka-brokers:
+  - localhost:9092
+kafka-group-id: notification-service

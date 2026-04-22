@@ -42,6 +42,8 @@ github.com/rogpeppe/go-internal v1.14.1 h1:UQB4HGPB6osV0SQTLymcB4TgvyWu6ZyliaW0t
 github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7so1lCWt35ZSgc=
 github.com/rogue0026/kafka-contracts v0.0.0-20260417131831-ce70c32d8d12 h1:6QDsOAbzCVtU+h5nxHvr3C9xX2gWIkEXDdJr/AkMt/o=
 github.com/rogue0026/kafka-contracts v0.0.0-20260417131831-ce70c32d8d12/go.mod h1:HuMWjEK3aIxl6+9hu8iRW0dp30j8ScJBqgfbeMmPcA0=
+github.com/rogue0026/kafka-contracts v0.0.0-20260422121440-82288fc3da07 h1:0umVO+UiwdB01PlgZdxZhfRaWFayeGnkTC+QuJFIPKw=
+github.com/rogue0026/kafka-contracts v0.0.0-20260422121440-82288fc3da07/go.mod h1:HuMWjEK3aIxl6+9hu8iRW0dp30j8ScJBqgfbeMmPcA0=
 github.com/rogue0026/marketplace-proto_v2 v0.0.0-20260416082659-015c14e14c90 h1:z6DcX/YLpTEKUVVrQec5pJMYqGjlJCq5PX77YLAASog=
 github.com/rogue0026/marketplace-proto_v2 v0.0.0-20260416082659-015c14e14c90/go.mod h1:gI/V1eXdEbBLyN+JZseqYmk2BzPxJFOYvCnS5ASYxcY=
 github.com/segmentio/kafka-go v0.4.50 h1:mcyC3tT5WeyWzrFbd6O374t+hmcu1NKt2Pu1L3QaXmc=

@@ -120,6 +120,7 @@ func (r *OrdersRepository) CreateOrder(ctx context.Context, userID uint64, order
 	}
 
 	e := events.OrderCreated{
+		UserID:  userID,
 		OrderID: orderID,
 	}
 
