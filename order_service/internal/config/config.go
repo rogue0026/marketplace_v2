@@ -3,11 +3,11 @@ package config
 import "github.com/ilyakaznacheev/cleanenv"
 
 type Config struct {
-	DatabaseURL           string   `yaml:"database-url"`
-	GRPCServerAddress     string   `yaml:"grpc-server-address"`
-	UserServiceAddress    string   `yaml:"user-service-address"`
-	ProductServiceAddress string   `yaml:"product-service-address"`
-	KafkaBrokers          []string `yaml:"kafka-brokers"`
+	DatabaseURL           string   `yaml:"database-url" env:"DATABASE_URL"`
+	GRPCServerAddress     string   `yaml:"grpc-server-address" env:"GRPC_SERVER_ADDRESS"`
+	UserServiceAddress    string   `yaml:"user-service-address" env:"USER_SERVICE_ADDRESS"`
+	ProductServiceAddress string   `yaml:"product-service-address" env:"PRODUCT_SERVICE_ADDRESS"`
+	KafkaBrokers          []string `yaml:"kafka-brokers" env:"KAFKA_BROKERS"`
 }
 
 func Load(cfgPath string) (*Config, error) {
