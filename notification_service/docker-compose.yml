@@ -1,0 +1,30 @@
+services:
+  notification-postgres:
+    image: postgres:16
+    restart: unless-stopped
+    networks:
+      - marketplace
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: notification_service_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d notification_service_db"]
+      start_period: 10s
+      interval: 5s
+      timeout: 3s
+      retries: 5
+
+  notification-service:
+    build: .
+    restart: unless-stopped
+    networks:
+      - marketplace
+    environment:
+      DATABASE_URL: "postgres://user:password@notification-postgres:5432/notification_service_db"
+      GRPC_SERVER_ADDRESS: ":4003"
+      KAFKA_BROKERS: "kafka:29092"
+      KAFKA_GROUP_ID: "notification-service"
+    depends_on:
+      notification-postgres:
+        condition: service_healthy

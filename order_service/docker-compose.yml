@@ -1,5 +1,5 @@
 services:
-  user-postgres:
+  order-postgres:
     image: postgres:16
     restart: unless-stopped
     networks:
@@ -7,24 +7,25 @@ services:
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
-      POSTGRES_DB: user_service_db
+      POSTGRES_DB: order_service_db
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U user -d user_service_db"]
+      test: ["CMD-SHELL", "pg_isready -U user -d order_service_db"]
       start_period: 10s
       interval: 5s
-      retries: 5
       timeout: 3s
+      retries: 5
 
-  user-service:
+  order-service:
     build: .
     restart: unless-stopped
     networks:
       - marketplace
     environment:
-      DATABASE_URL: "postgres://user:password@user-postgres:5432/user_service_db"
+      DATABASE_URL: "postgres://user:password@order-postgres:5432/order_service_db"
       GRPC_SERVER_ADDRESS: ":4000"
+      USER_SERVICE_ADDRESS: "user-service:4000"
       PRODUCT_SERVICE_ADDRESS: "product-service:4000"
       KAFKA_BROKERS: "kafka:29092"
     depends_on:
-      user-postgres:
+      order-postgres:
         condition: service_healthy

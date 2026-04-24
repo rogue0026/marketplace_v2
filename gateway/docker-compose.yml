@@ -1,0 +1,22 @@
+services:
+  gateway:
+    build: .
+    restart: unless-stopped
+    networks:
+      - marketplace
+    ports:
+      - "8080:8080"
+    environment:
+      HTTP_ADDRESS: ":8080"
+      PRODUCT_SERVICE_ADDRESS: "product-service:4000"
+      USER_SERVICE_ADDRESS: "user-service:4000"
+      ORDER_SERVICE_ADDRESS: "order-service:4000"
+    depends_on:
+      product-service:
+        condition: service_started
+      user-service:
+        condition: service_started
+      order-service:
+        condition: service_started
+      notification-service:
+        condition: service_started

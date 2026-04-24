@@ -19,6 +19,7 @@ func main() {
 		return
 	}
 
+	fmt.Printf("starting notification service at %s\n", app.Cfg.GRPCServerAddress)
 	err = app.Run(ctx)
 	if err != nil {
 		fmt.Println(err.Error())

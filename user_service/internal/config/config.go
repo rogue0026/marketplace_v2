@@ -13,7 +13,7 @@ type AppConfig struct {
 
 func Load(cfgPath string) (*AppConfig, error) {
 	cfg := AppConfig{}
-	err := cleanenv.ReadConfig(cfgPath, &cfg)
+	err := cleanenv.ReadEnv(&cfg)
 	if err != nil {
 		return nil, err
 	}

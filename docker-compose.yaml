@@ -1,9 +1,9 @@
 include:
   - ./gateway/docker-compose.yml
+  - ./notification_service/docker-compose.yml
+  - ./order_service/docker-compose.yml
   - ./product_service/docker-compose.yml
   - ./user_service/docker-compose.yml
-  - ./order_service/docker-compose.yml
-  - ./notification_service/docker-compose.yml
 
 networks:
   marketplace:
