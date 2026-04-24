@@ -2,6 +2,8 @@ services:
   product-postgres:
     image: postgres:16
     restart: unless-stopped
+    networks:
+      - marketplace
     environment:
       POSTGRES_USER: user
       POSTGRES_PASSWORD: password
@@ -16,6 +18,8 @@ services:
   product-service:
     build: .
     restart: unless-stopped
+    networks:
+      - marketplace
     environment:
       DATABASE_URL: "postgres://user:password@product-postgres:5432/product_service_db"
       GRPC_SERVER_ADDRESS: :4000

@@ -1,0 +1,27 @@
+services:
+  user-postgres:
+    image: postgres:16
+    restart: unless-stopped
+    networks:
+      - marketplace
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: user_service_db
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user -d user_service_db"]
+      start_period: 10s
+      interval: 5s
+      retries: 5
+      timeout: 3s
+
+  user-service:
+    build: .
+    restart: unless-stopped
+    networks:
+      - marketplace
+    environment:
+      DATABASE_URL: "postgres://user:password@user-postgres:5432/user_service_db"
+      GRPC_SERVER_ADDRESS: ":4000"
+      PRODUCT_SERVICE_ADDRESS: "product-service:4000"
+      KAFKA_BROKERS: "kafka:29092"
