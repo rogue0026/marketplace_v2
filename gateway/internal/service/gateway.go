@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	ns "gateway/internal/clients/notification_service"
 	os "gateway/internal/clients/order_service"
 	ps "gateway/internal/clients/product_service"
 	us "gateway/internal/clients/user_service"
@@ -9,16 +10,23 @@ import (
 )
 
 type Gateway struct {
-	ProductService *ps.ProductService
-	UserService    *us.UserService
-	OrderService   *os.OrderService
+	ProductService      *ps.ProductService
+	UserService         *us.UserService
+	OrderService        *os.OrderService
+	NotificationService *ns.NotificationService
 }
 
-func New(productService *ps.ProductService, userService *us.UserService, orderService *os.OrderService) *Gateway {
+func New(
+	productService *ps.ProductService,
+	userService *us.UserService,
+	orderService *os.OrderService,
+	notificationService *ns.NotificationService,
+) *Gateway {
 	return &Gateway{
-		ProductService: productService,
-		UserService:    userService,
-		OrderService:   orderService,
+		ProductService:      productService,
+		UserService:         userService,
+		OrderService:        orderService,
+		NotificationService: notificationService,
 	}
 }
 
@@ -92,4 +100,18 @@ func (g *Gateway) PayForOrder(ctx context.Context, orderID uint64) (uint64, erro
 	}
 
 	return paymentID, nil
+}
+
+func (g *Gateway) NotificationsByUser(
+	ctx context.Context,
+	userID uint64,
+	limit uint64,
+	offset uint64,
+) ([]*domain.Notification, error) {
+	notifications, err := g.NotificationService.NotificationsByUser(ctx, userID, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+
+	return notifications, nil
 }

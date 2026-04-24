@@ -14,6 +14,9 @@ func MapError(err error) (string, int) {
 	case errors.Is(err, apperrors.ErrProductsNotFound):
 		return "products not found", http.StatusNotFound
 
+	case errors.Is(err, apperrors.ErrNotificationsNotFound):
+		return "notifications not found", http.StatusNotFound
+
 	case errors.Is(err, apperrors.ErrUserAlreadyExists):
 		return "user already exists", http.StatusConflict
 

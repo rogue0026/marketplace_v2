@@ -7,10 +7,11 @@ import (
 )
 
 type AppConfig struct {
-	HTTPAddress        string `yaml:"http-address" env:"HTTP_ADDRESS"`
-	ProductServiceAddr string `yaml:"product-service-addr" env:"PRODUCT_SERVICE_ADDR"`
-	UserServiceAddr    string `yaml:"user-service-addr" env:"USER_SERVICE_ADDR"`
-	OrderServiceAddr   string `yaml:"order-service-addr" env:"ORDER_SERVICE_ADDR"`
+	HTTPAddress                string `yaml:"http-address" env:"HTTP_ADDRESS"`
+	ProductServiceAddress      string `yaml:"product-service-addr" env:"PRODUCT_SERVICE_ADDRESS"`
+	UserServiceAddress         string `yaml:"user-service-addr" env:"USER_SERVICE_ADDRESS"`
+	OrderServiceAddress        string `yaml:"order-service-addr" env:"ORDER_SERVICE_ADDRESS"`
+	NotificationServiceAddress string `yaml:"notification-service-addr" env:"NOTIFICATION_SERVICE_ADDRESS"`
 }
 
 func Load(cfgPath string) (*AppConfig, error) {

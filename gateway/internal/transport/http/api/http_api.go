@@ -5,6 +5,7 @@ import (
 	"gateway/internal/service"
 	"gateway/internal/transport/http/errmap"
 	"net/http"
+	"strconv"
 )
 
 func ProductCatalogHandler(gateway *service.Gateway) http.HandlerFunc {
@@ -251,6 +252,62 @@ func PayForOrderHandler(gateway *service.Gateway) http.HandlerFunc {
 
 		m := map[string]uint64{"payment_id": paymentID}
 		data, err := json.MarshalIndent(&m, "", "  ")
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write(data)
+	}
+
+	return h
+}
+
+func GetUserNotificationsHandler(gateway *service.Gateway) http.HandlerFunc {
+	h := func(w http.ResponseWriter, r *http.Request) {
+		userIDValue := r.URL.Query().Get("user_id")
+		if userIDValue == "" {
+			http.Error(w, "user_id is required", http.StatusBadRequest)
+			return
+		}
+
+		userID, err := strconv.ParseUint(userIDValue, 10, 64)
+		if err != nil {
+			http.Error(w, "invalid user_id", http.StatusBadRequest)
+			return
+		}
+
+		limit := uint64(20)
+		limitValue := r.URL.Query().Get("limit")
+		if limitValue != "" {
+			parsedLimit, parseErr := strconv.ParseUint(limitValue, 10, 64)
+			if parseErr != nil {
+				http.Error(w, "invalid limit", http.StatusBadRequest)
+				return
+			}
+			limit = parsedLimit
+		}
+
+		offset := uint64(0)
+		offsetValue := r.URL.Query().Get("offset")
+		if offsetValue != "" {
+			parsedOffset, parseErr := strconv.ParseUint(offsetValue, 10, 64)
+			if parseErr != nil {
+				http.Error(w, "invalid offset", http.StatusBadRequest)
+				return
+			}
+			offset = parsedOffset
+		}
+
+		notifications, err := gateway.NotificationsByUser(r.Context(), userID, limit, offset)
+		if err != nil {
+			msg, status := errmap.MapError(err)
+			http.Error(w, msg, status)
+			return
+		}
+
+		data, err := json.MarshalIndent(&notifications, "", "  ")
 		if err != nil {
 			http.Error(w, err.Error(), http.StatusInternalServerError)
 			return

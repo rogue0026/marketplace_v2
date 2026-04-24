@@ -1,6 +1,7 @@
 package application
 
 import (
+	ns "gateway/internal/clients/notification_service"
 	os "gateway/internal/clients/order_service"
 	ps "gateway/internal/clients/product_service"
 	us "gateway/internal/clients/user_service"
@@ -43,8 +44,13 @@ func New(cfgPath string) (*App, error) {
 		return nil, err
 	}
 
+	notificationService, err := ns.NewNotificationService(appCfg.NotificationServiceAddr)
+	if err != nil {
+		return nil, err
+	}
+
 	// creating service
-	gateway := service.New(productService, userService, orderService)
+	gateway := service.New(productService, userService, orderService, notificationService)
 
 	// register routes
 	r.Get("/api/v1/products-catalog", api.ProductCatalogHandler(gateway))
@@ -58,8 +64,9 @@ func New(cfgPath string) (*App, error) {
 	r.Post("/api/v1/users/wallets", api.AddMoneyHandler(gateway))
 
 	r.Post("/api/v1/orders", api.CreateOrderHandler(gateway))
-	
+
 	r.Post("/api/v1/payments", api.PayForOrderHandler(gateway))
+	r.Get("/api/v1/notifications", api.GetUserNotificationsHandler(gateway))
 
 	// creating http server
 	s := &http.Server{
