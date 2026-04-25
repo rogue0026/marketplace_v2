@@ -29,22 +29,22 @@ func New(cfgPath string) (*App, error) {
 	r := chi.NewRouter()
 
 	// creating clients
-	productService, err := ps.NewProductService(appCfg.ProductServiceAddr)
+	productService, err := ps.NewProductService(appCfg.ProductServiceAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	userService, err := us.NewUserService(appCfg.UserServiceAddr)
+	userService, err := us.NewUserService(appCfg.UserServiceAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	orderService, err := os.NewOrderService(appCfg.OrderServiceAddr)
+	orderService, err := os.NewOrderService(appCfg.OrderServiceAddress)
 	if err != nil {
 		return nil, err
 	}
 
-	notificationService, err := ns.NewNotificationService(appCfg.NotificationServiceAddr)
+	notificationService, err := ns.NewNotificationService(appCfg.NotificationServiceAddress)
 	if err != nil {
 		return nil, err
 	}

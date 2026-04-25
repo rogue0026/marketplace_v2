@@ -16,6 +16,8 @@ WORKDIR /app
 
 COPY --from=build /notification_service/service /app/service
 
-EXPOSE 8080
+COPY ./migrations/ ./migrations/
+
+EXPOSE 4000
 
 CMD ["/app/service"]

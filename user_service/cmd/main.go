@@ -7,6 +7,7 @@ import (
 	"os/signal"
 	"syscall"
 	"user_service/internal/application"
+	"user_service/pkg/migrations"
 )
 
 func main() {
@@ -15,7 +16,13 @@ func main() {
 
 	app, err := application.New(ctx, "./config.yaml")
 	if err != nil {
-		fmt.Println(err.Error())
+		fmt.Printf("creating app instance: %s\n", err.Error())
+		return
+	}
+
+	err = migrations.Run("migrations", fmt.Sprintf("%s?sslmode=disable", app.Cfg.DatabaseURL))
+	if err != nil {
+		fmt.Printf("applying migrations: %s", err.Error())
 		return
 	}
 

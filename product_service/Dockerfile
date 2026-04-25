@@ -12,8 +12,11 @@ RUN CGO_ENABLED=0 GOOS=linux go build -o ./service ./cmd/main.go
 
 FROM scratch AS final
 
-COPY --from=build /product_service/service /
+WORKDIR /app
 
-EXPOSE 8080
+COPY --from=build /product_service/service .
+COPY ./migrations/* ./migrations/
 
-CMD ["/service"]
+EXPOSE 4000
+
+CMD ["/app/service"]

@@ -28,3 +28,7 @@ services:
     depends_on:
       user-postgres:
         condition: service_healthy
+
+#networks:
+#  marketplace:
+#    driver: bridge

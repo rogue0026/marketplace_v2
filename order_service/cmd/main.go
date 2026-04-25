@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"order_service/internal/application"
+	"order_service/pkg/migrations"
 	"os"
 	"os/signal"
 	"syscall"
@@ -16,6 +17,12 @@ func main() {
 	app, err := application.New(ctx, "./config.yaml")
 	if err != nil {
 		fmt.Println(err.Error())
+		return
+	}
+
+	err = migrations.Run("migrations", fmt.Sprintf("%s?sslmode=disable", app.Cfg.DatabaseURL))
+	if err != nil {
+		fmt.Printf("applying migrations: %s\n", err.Error())
 		return
 	}
 

@@ -1,3 +1,19 @@
+CREATE TABLE IF NOT EXISTS orders (
+                                      id BIGSERIAL PRIMARY KEY,
+                                      user_id BIGINT NOT NULL,
+                                      total_price BIGINT NOT NULL,
+                                      order_status VARCHAR(128)
+);
+
+CREATE TABLE IF NOT EXISTS orders_content (
+                                              id BIGSERIAL PRIMARY KEY,
+                                              order_id BIGINT REFERENCES orders (id) ON DELETE RESTRICT,
+                                              user_id BIGINT NOT NULL,
+                                              product_id BIGINT NOT NULL,
+                                              product_quantity BIGINT NOT NULL,
+                                              product_price_per_unit BIGINT NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS payments (
                                         id BIGSERIAL PRIMARY KEY,
                                         order_id BIGINT REFERENCES orders(id),
@@ -19,18 +35,5 @@ CREATE TABLE IF NOT EXISTS outbox (
                                       CONSTRAINT status_one_of CHECK ( status in ('PENDING', 'PROCESSED') )
 );
 
-CREATE TABLE IF NOT EXISTS orders (
-                                      id BIGSERIAL PRIMARY KEY,
-                                      user_id BIGINT NOT NULL,
-                                      total_price BIGINT NOT NULL,
-                                      order_status VARCHAR(128)
-);
 
-CREATE TABLE IF NOT EXISTS orders_content (
-                                              id BIGSERIAL PRIMARY KEY,
-                                              order_id BIGINT REFERENCES orders (id) ON DELETE RESTRICT,
-                                              user_id BIGINT NOT NULL,
-                                              product_id BIGINT NOT NULL,
-                                              product_quantity BIGINT NOT NULL,
-                                              product_price_per_unit BIGINT NOT NULL
-);
+

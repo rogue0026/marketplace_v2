@@ -15,7 +15,8 @@ FROM scratch AS final
 WORKDIR /app
 
 COPY --from=build /order_service/service ./
+COPY ./migrations/ ./migrations/
 
-EXPOSE 8080
+EXPOSE 4000
 
 CMD ["/app/service"]

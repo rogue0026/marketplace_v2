@@ -14,7 +14,7 @@ FROM scratch AS final
 
 WORKDIR /app
 
-COPY --from=build /gateway/service /app/service
+COPY --from=build /gateway/service ./service
 
 EXPOSE 8080
 
